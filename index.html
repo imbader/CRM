@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Government CRM Portal</title>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <style>
+        /* Main styling */
+        body {
+            background-color: #f5f7fa;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Container styling */
+        .container, #menuButtons, #crmPage, #searchPage, #addCustomerPage, #modifyCustomerPage, #customerDetailsPage {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            margin: 10px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            display: none;
+        }
+
+        /* Show login and CRM page container */
+        #loginContainer, #menuButtons {
+            display: flex;
+        }
+
+        /* Header styling */
+        h2 {
+            color: #333;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* Input fields and buttons */
+        input[type="text"], input[type="password"], input[type="email"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #2e86de;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1b6ac9;
+        }
+
+        .menuButton {
+            background-color: #34495e;
+        }
+
+        .menuButton:hover {
+            background-color: #2c3e50;
+        }
+
+        /* Image styling */
+        .banner img {
+            width: 80px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .banner h1 {
+            font-size: 1.5em;
+            color: #333;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Banner/Header section with Government logo -->
+    <div class="banner">
+        <img src="https://via.placeholder.com/80" alt="Government Logo">
+        <h1>Government CRM Portal</h1>
+    </div>
+
+    <!-- Login Container -->
+    <div class="container" id="loginContainer">
+        <h2>Login / Register</h2>
+        <button onclick="netlifyIdentity.open()">Log In / Sign Up with Netlify</button>
+    </div>
+
+    <!-- Main Menu Buttons -->
+    <div class="container" id="menuButtons">
+        <button class="menuButton" id="crmButton">Access CRM</button>
+        <button class="menuButton" id="generatePdfButton">Generate PDF</button>
+        <button class="menuButton" id="logoutButton">Logout</button>
+    </div>
+
+    <!-- CRM Section -->
+    <div class="container" id="crmPage">
+        <h2>CRM Management</h2>
+        <button class="menuButton" id="searchCustomerButton">Search Customer</button>
+        <button class="menuButton" id="addCustomerButton">Add New Customer</button>
+        <button class="menuButton" id="modifyCustomerButton">Modify Customer</button>
+        <button class="menuButton" id="backButton">Back to Menu</button>
+    </div>
+
+    <!-- Search Customer Page -->
+    <div class="container" id="searchPage">
+        <h2>Customer Search</h2>
+        <input type="text" id="searchField" placeholder="Search by Phone Number" pattern="\d*" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '');" />
+        <button class="searchButton" id="searchButton">Search</button>
+        <button class="searchButton" id="backFromSearchButton">Back</button>
+        <div class="resultContainer" id="resultContainer"></div>
+    </div>
+
+    <!-- Add New Customer Page -->
+    <div class="container" id="addCustomerPage">
+        <h2>Add New Customer</h2>
+        <input type="text" id="customerName" placeholder="Name (required)" required />
+        <input type="text" id="civilID" placeholder="Civil ID (required)" required pattern="\d*" maxlength="12" />
+        <input type="text" id="phoneNumber" placeholder="Phone Number (required)" required pattern="\d*" maxlength="8" />
+        <select id="nationality" required>
+            <option value="">Select Nationality</option>
+            <option value="Kuwaiti">Kuwaiti</option>
+            <option value="Saudi">Saudi</option>
+            <option value="Emirati">Emirati</option>
+        </select>
+        <textarea id="notes" placeholder="Notes" style="height: 80px;"></textarea>
+        <div id="customerSince">Customer Since: <span id="creationDate"></span></div>
+        <button id="saveCustomerButton">Save Customer</button>
+        <button id="backFromAddCustomerButton">Back</button>
+    </div>
+
+    <div id="modifyCustomerPage" class="container">
+        <h2>Modify Customer</h2>
+        <input type="text" id="modifySearchField" placeholder="Search by Name or Phone" />
+        <button class="menuButton" id="modifySearchButton">Search</button>
+        <div id="customerList"></div>
+        <button id="backFromModifyButton">Back</button>
+    </div>
+
+    <div id="customerDetailsPage" class="container">
+        <h2>Customer Details</h2>
+        <div id="customerDetails"></div>
+        <button id="backFromDetailsButton">Back</button>
+    </div>
+
+    <script>
+        // Initialize Netlify Identity
+        netlifyIdentity.on("init", user => {
+            if (user) {
+                showMenu();
+                console.log("Logged in as:", user);
+            }
+        });
+
+        netlifyIdentity.on("login", user => {
+            showMenu();
+            console.log("Logged in as:", user);
+            netlifyIdentity.close();
+        });
+
+        netlifyIdentity.on("logout", () => {
+            showLogin();
+            console.log("Logged out");
+        });
+
+        function showMenu() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('menuButtons').style.display = 'flex';
+        }
+
+        function showLogin() {
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('menuButtons').style.display = 'none';
+        }
+
+        // CRM Navigation
+        document.getElementById('crmButton').onclick = function() {
+            document.getElementById('menuButtons').style.display = 'none';
+            document.getElementById('crmPage').style.display = 'flex';
+        };
+
+        document.getElementById('logoutButton').onclick = function() {
+            netlifyIdentity.logout();
+        };
+
+        document.getElementById('searchCustomerButton').onclick = function() {
+            document.getElementById('crmPage').style.display = 'none';
+            document.getElementById('searchPage').style.display = 'flex';
+        };
+
+        document.getElementById('addCustomerButton').onclick = function() {
+            document.getElementById('crmPage').style.display = 'none';
+            document.getElementById('addCustomerPage').style.display = 'flex';
+        };
+
+        document.getElementById('modifyCustomerButton').onclick = function() {
+            document.getElementById('crmPage').style.display = 'none';
+            document.getElementById('modifyCustomerPage').style.display = 'flex';
+        };
+
+        document.getElementById('backButton').onclick = function() {
+            document.getElementById('crmPage').style.display = 'none';
+            document.getElementById('menuButtons').style.display = 'flex';
+        };
+
+        document.getElementById('backFromSearchButton').onclick = function() {
+            document.getElementById('searchPage').style.display = 'none';
+            document.getElementById('crmPage').style.display = 'flex';
+        };
+
+        document.getElementById('backFromAddCustomerButton').onclick = function() {
+            document.getElementById('addCustomerPage').style.display = 'none';
+            document.getElementById('crmPage').style.display = 'flex';
+        };
+
+        document.getElementById('backFromModifyButton').onclick = function() {
+            document.getElementById('modifyCustomerPage').style.display = 'none';
+            document.getElementById('crmPage').style.display = 'flex';
+        };
+
+        // Add Customer functionality
+        document.getElementById('saveCustomerButton').onclick = function() {
+            const customerName = document.getElementById('customerName').value;
+            const civilID = document.getElementById('civilID').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const nationality = document.getElementById('nationality').value;
+            const notes = document.getElementById('notes').value;
+            const creationDate = new Date().toLocaleDateString();
+
+            const newCustomer = {
+                name: customerName,
+                civilID: civilID,
+                phoneNumber: phoneNumber,
+                nationality: nationality,
+                notes: notes,
+                customerSince: creationDate,
+            };
+
+            // Reset form after saving
+            document.getElementById('customerName').value = '';
+            document.getElementById('civilID').value = '';
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('nationality').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('creationDate').innerText = creationDate;
+
+            document.getElementById('addCustomerPage').style.display = 'none';
+            document.getElementById('crmPage').style.display = 'flex';
+        };
+    </script>
+</body>
+</html>
